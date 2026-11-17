@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# SENSITIVE: API keys / telegram credentials live here. NEVER commit.
+config.toml
+tg_session/
+*.session
+
+# runtime state
+data/
+cache/
+logs/
+logs_proxy/
+prompts/
+last_query.json
+test_data/
+temp_*.jpg
+frame*.jpg
+image_generator_tmp.png
