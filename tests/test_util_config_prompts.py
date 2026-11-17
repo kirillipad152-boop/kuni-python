@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+from pathlib import Path
 import tomllib
 from datetime import datetime, timedelta, timezone
 
@@ -133,8 +134,28 @@ def test_secondary_endpoints_inherit_from_main_llm():
     assert cfg2.resolve(cfg2.llmImageToText).endpoint.bearerKey == "B"
 
 
+def test_the_original_authors_chat_never_becomes_the_owner_by_default(tmp_path):
+    cfg = cfgmod.Config()
+    cfg.telegramApiId, cfg.telegramApiHash = 1, "x"
+    for owner in (0, 625207005):
+        cfg.papikChatId = owner
+        errors = cfgmod.validate(cfg)
+        assert len(errors) == 1 and "papik_chat_id" in errors[0]
+    cfg.papikChatId = 42
+    assert cfgmod.validate(cfg) == []
+    cfg.telegramEnabled, cfg.papikChatId = False, 0  # the offline REPL needs no real owner
+    assert cfgmod.validate(cfg) == []
+    # a freshly generated or copied config carries placeholders, not anybody's identity
+    generated = cfgmod.init_config_file(tmp_path / "c.toml", api_key="k")
+    assert generated.papikChatId == 0 and generated.papikName == "Owner" and "625207005" not in (tmp_path / "c.toml").read_text()
+    example = cfgmod.parse(tomllib.loads((Path(__file__).resolve().parents[1] / "config.example.toml").read_text()))
+    assert example.papikChatId == 0 and example.telegramApiId == 0 and example.telegramApiHash == ""
+    assert example.llm.endpoint.bearerKey == "" and example.webSearchOllamaKey == "" and not example.llm.endpoint.extraBearerKeys
+
+
 def test_validate_reports_missing_telegram_credentials():
     cfg = cfgmod.Config()
+    cfg.papikChatId = 42
     assert len(cfgmod.validate(cfg)) == 2
     cfg.telegramApiId, cfg.telegramApiHash = 1, "x"
     assert cfgmod.validate(cfg) == []

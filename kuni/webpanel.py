@@ -51,6 +51,7 @@ LABELS = {
     "chatNotificationFilter": "Фильтр уведомлений",
     "channelNotifications": "Посты каналов будят её",
     "capabilityWebReader": "Чтение веб-страниц",
+    "capabilityWebSearch": "Поиск в интернете",
     "capabilityReminders": "Напоминания",
     "capabilityYouTube": "YouTube",
     "canJoinChats": "Может вступать в каналы и группы",

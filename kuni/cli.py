@@ -180,6 +180,8 @@ async def chat_async(args) -> int:
     c = config()
     c.randomlyGoSleep = False  # it would hang the REPL for hours
     c.checkChatsOnStartup = False
+    if not c.papikChatId:
+        c.papikChatId = 1  # offline REPL: a demo owner id, nothing is sent to Telegram
     fake = FakeTelegram(my_id=1000)
     fake.add_user(c.papikChatId, c.papikName)
     llm = OpenAIChat()

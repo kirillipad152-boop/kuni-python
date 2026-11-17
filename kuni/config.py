@@ -35,6 +35,7 @@ CONFIG_TOML = Path("config.toml")
 DEFAULT_BASE_URL = "https://apihub.agnes-ai.com/v1/"
 DEFAULT_MODEL = "agnes-3.0-flash"
 DEFAULT_REASONING_EFFORT = "high"
+ORIGINAL_AUTHOR_CHAT_ID = 625207005  # the upstream default; it must never become somebody else's owner
 
 
 class LockdownMode(str, Enum):
@@ -162,6 +163,8 @@ SCHEMA: list[tuple[str, str, Any, str]] = [
     ("capabilityWebReader", "capabilities.web_reader.enabled", False, "bool"),
     ("capabilityReminders", "capabilities.reminders.enabled", False, "bool"),
     ("watchdogEnabled", "misc.watchdog_enabled", True, "bool"),
+    ("webSearchProvider", "capabilities.web_search.provider", "ollama", "search_provider"),
+    ("webSearchTavilyKey", "capabilities.web_search.tavily_key", "", "str"),
     ("webSearchOllamaKey", "capabilities.web_search.ollama_bearer_key", "", "str"),
     ("capabilityVision", "capabilities.vision.enabled", False, "bool"),
     ("llmImageToText", "capabilities.vision.llm_image_to_text", EndpointAndModel(), "endpoint_model"),
@@ -233,6 +236,9 @@ COMMENTS: dict[str, str] = {
     "capabilities.take_photo.sd.endpoint": "Address to stable-diffusion deployment (AUTOMATIC1111 WebUI with --api)",
     "capabilities.take_photo.sd.checkpoint": "Stable diffusion checkpoint. https://civitai.com/models/376130/nova-anime-xl",
     "capabilities.web_search.enabled": "Whether Kuni can use web search.",
+    "capabilities.web_search.provider": "\"tavily\" (official API, free tier of 1000 searches a month, needs tavily_key), \"duckduckgo\"\n"
+    "(no key, but it scrapes a public page and rate-limits servers after a query or two) or \"ollama\" (needs paid credits).",
+    "capabilities.web_search.tavily_key": "API key from tavily.com (free signup, no card).",
     "capabilities.youtube.enabled": "Search YouTube and read available subtitles (no video download or API key).",
     "capabilities.youtube.proxy_url": "Optional HTTP/HTTPS proxy for YouTube metadata and captions only; empty = direct, ignoring environment proxies.\n"
     "Use a local HTTP bridge such as http://127.0.0.1:11990 for other tunnel protocols.",
@@ -419,6 +425,10 @@ def _parse_value(v: Any, default: Any, kind: str):
             str(v.get("model", default.model)),
             str(v.get("reasoningEffort", default.reasoningEffort)),
         )
+    if kind == "search_provider":
+        if v not in ("ollama", "duckduckgo", "tavily"):
+            raise ValueError('capabilities.web_search.provider must be "tavily", "duckduckgo" or "ollama"')
+        return v
     if kind == "str_list":
         if (not isinstance(v, list) or len(v) > 20
                 or any(not isinstance(i, str) or not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?", i) for i in v)):
@@ -519,6 +529,7 @@ def render(cfg: Config) -> str:
 def init_config_file(path: Path = CONFIG_TOML, *, base_url: str | None = None, api_key: str | None = None,
                      model: str | None = None, effort: str | None = None) -> Config:
     cfg = Config()
+    cfg.papikChatId, cfg.papikName = 0, "Owner"  # placeholders: a new file must not name anybody's chat as the owner
     if base_url:
         cfg.llm.endpoint.baseUrl = base_url
     if api_key:
@@ -556,6 +567,9 @@ def set_config(cfg: Config) -> None:
 def validate(cfg: Config) -> list[str]:
     errors = []
     if cfg.telegramEnabled:
+        if cfg.papikChatId in (0, ORIGINAL_AUTHOR_CHAT_ID):
+            errors.append("general.papik_chat_id must be YOUR Telegram user id: it decides who may control Kuni "
+                          "(0 means nobody, and the old default is the original author's chat)")
         if cfg.telegramApiId == 0:
             errors.append("general.telegram_api_id should be populated (the actual value is 0)")
         if not cfg.telegramApiHash:
@@ -637,6 +651,7 @@ EDITABLE_SETTINGS: dict[str, tuple] = {
     "chatNotificationFilter": ("enum", [m.value for m in LockdownMode]),
     "channelNotifications": ("bool",),
     "capabilityWebReader": ("bool",),
+    "capabilityWebSearch": ("bool",),
     "capabilityReminders": ("bool",),
     "capabilityYouTube": ("bool",),
     "canJoinChats": ("bool",),

@@ -19,7 +19,7 @@ character_nickname = "@kunii_chan"
 
 # Used by system and other prompts, defines instance owner name.
 # Should match with papik_chat_id account name.
-papik_name = "Alex2772"
+papik_name = "Owner"
 
 # User id of the instance owner.
 # Kuni's kernel gives several benefits to the "instance owner user":
@@ -28,8 +28,11 @@ papik_name = "Alex2772"
 # - A message from instance owner wakes up Kuni if she sleeps
 #
 # Your user id can be obtained by @getmyid_bot, @raw_data_bot or @userinfobot.
-papik_chat_id = 625207005
+papik_chat_id = 0  # REQUIRED for Telegram mode: your own Telegram user id
 
+# Your Telegram account. Nothing here is a default for somebody else: the session is created on first run in tg_session/
+# (never commit it) and papik_chat_id above must be YOUR user id.
+#
 # Telegram API key, see
 # https://core.telegram.org/api/obtaining_api_id
 telegram_api_id = 0
@@ -43,7 +46,8 @@ telegram_enabled = true
 
 # Main LLM endpoint. Any OpenAI-compatible API. PUT YOUR API KEY AND BASE URL HERE:
 #
-# - baseUrl:  "https://apihub.agnes-ai.com/v1/", "https://openrouter.ai/api/v1/", "http://localhost:11434/v1/"
+# - baseUrl:  any OpenAI-compatible server: "https://api.openai.com/v1/", "https://openrouter.ai/api/v1/",
+#             "http://localhost:11434/v1/" (local Ollama, no key needed), "https://apihub.agnes-ai.com/v1/"
 # - bearerKey: your API key (or set env KUNI_API_KEY, it wins over this file)
 # - extraBearerKeys: optional array of additional keys for this same endpoint; shared quotas may still apply
 # - model: model id
@@ -240,8 +244,15 @@ enabled = false
 
 [capabilities.web_search]
 
-# Whether Kuni can search the web (tool search_web, plus #ask results). Needs ollama_bearer_key below.
+# Whether Kuni can search the web (tool search_web, plus #ask results).
 enabled = false
+
+# "tavily": official API, free tier (1000 searches a month), needs tavily_key; "duckduckgo": no key, but it scrapes a
+# public page and rate-limits servers after a query or two; "ollama": needs the key below and paid credits.
+provider = "tavily"
+
+# API key from https://tavily.com (free signup, no card).
+tavily_key = ""
 
 # Bearer key for the Ollama web search integration (ollama.com/api/web_search).
 ollama_bearer_key = ""
